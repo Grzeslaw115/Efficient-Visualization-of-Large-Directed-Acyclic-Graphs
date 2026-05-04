@@ -1,4 +1,5 @@
 import React from "react";
+import { motion } from "framer-motion";
 import { X, Trash2 } from "lucide-react";
 
 interface FocusedNodesListProps {
@@ -7,6 +8,7 @@ interface FocusedNodesListProps {
   onRemoveNode: (index: number) => void;
   onClear: () => void;
   onSelectNode: (index: number) => void;
+  onHoverNode?: (index?: number) => void;
 }
 
 const FocusedNodesList: React.FC<FocusedNodesListProps> = ({
@@ -15,15 +17,19 @@ const FocusedNodesList: React.FC<FocusedNodesListProps> = ({
   onRemoveNode,
   onClear,
   onSelectNode,
+  onHoverNode,
 }) => {
   const getNodeName = (index: number) => {
     return nodeNames?.[index] || `Node ${index}`;
   };
 
   return (
-    <div
+    <motion.div
+      drag
+      dragMomentum={false}
+      dragElastic={0.15}
       className="fixed bottom-4 right-4 max-h-[300px] w-80 bg-white dark:bg-black/90 border border-black/10 dark:border-white/10 rounded-xl shadow-lg overflow-hidden flex flex-col"
-      style={{ zIndex: 30 }}
+      style={{ zIndex: 30, touchAction: "none" }}
     >
       {/* Header */}
       <div className="bg-purple-500/10 dark:bg-purple-900/20 px-4 py-3 border-b border-black/10 dark:border-white/10 flex items-center justify-between">
@@ -44,6 +50,8 @@ const FocusedNodesList: React.FC<FocusedNodesListProps> = ({
         {nodeIndices.map((index) => (
           <div
             key={index}
+            onMouseEnter={() => onHoverNode?.(index)}
+            onMouseLeave={() => onHoverNode?.(undefined)}
             className="px-4 py-2.5 border-b border-black/5 dark:border-white/5 flex items-center justify-between hover:bg-black/5 dark:hover:bg-white/5 transition group"
           >
             <button
@@ -74,7 +82,7 @@ const FocusedNodesList: React.FC<FocusedNodesListProps> = ({
           No focused nodes
         </div>
       )}
-    </div>
+    </motion.div>
   );
 };
 
