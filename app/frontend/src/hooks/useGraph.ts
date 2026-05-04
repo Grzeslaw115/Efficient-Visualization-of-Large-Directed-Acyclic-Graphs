@@ -36,11 +36,7 @@ export function useGraph(
   links: Float32Array,
   setSelectedNode: Dispatch<SetStateAction<NodeInfoProps | null>>,
   initialConfig?: UseGraphInitialConfig,
-  names?: string[],
-  focusMode?: "off" | "on",
-  focusedNodeIndices?: Set<number>,
-  setFocusedNodeIndices?: Dispatch<SetStateAction<Set<number>>>,
-  parentChildrenCacheRef?: React.MutableRefObject<Map<number, { parents: number[]; children: number[] }>>
+  names?: string[]
 ) {
   /* -------------------------------------------------------------------------- */
   /* Core refs and state                                                        */
@@ -61,8 +57,6 @@ export function useGraph(
   const highlightTokenRef = useRef(0);
   const searchIndicesRef = useRef<Set<number>>(new Set());
   const hoveredCardIndexRef = useRef<number | null>(null);
-  const focusModeRef = useRef<"off" | "on">(focusMode ?? "off");
-  const focusedNodeIndicesRef = useRef<Set<number>>(focusedNodeIndices ?? new Set());
 
   const appContext = useContext(AppContext);
   const currentGraphUUID = appContext?.currentGraphUUID;
@@ -191,16 +185,8 @@ export function useGraph(
       return;
     }
 
-    // In focused mode, only show tooltips for focused nodes
-    let indicesToShow = highlightedIndicesRef.current;
-    if (focusModeRef.current === "on") {
-      indicesToShow = highlightedIndicesRef.current.filter((idx) =>
-        focusedNodeIndicesRef.current.has(idx)
-      );
-    }
-
     setTooltips(
-      computePinnedTooltips(g, el, indicesToShow, getName)
+      computePinnedTooltips(g, el, highlightedIndicesRef.current, getName)
     );
   }, [graphRef, getName]);
 
@@ -297,38 +283,6 @@ export function useGraph(
     },
     [recomputeTooltipsPositions]
   );
-
-  // Trigger color re-application when focused nodes change
-  useEffect(() => {
-    const g = graphInstance.current;
-    if (!g) return;
-
-    const selectedIndex = selectedIndexRef.current;
-    const selectedIndices = selectedIndex !== null ? [selectedIndex] : [];
-
-    const { parents, children } = computeParentsChildren(
-      selectedIndices,
-      linksRef.current
-    );
-
-    void applyColors(selectedIndices, parents, children, { zoomToSelected: false });
-  }, [focusedNodeIndices, applyColors]);
-
-  // Trigger color re-application when focus mode changes
-  useEffect(() => {
-    const g = graphInstance.current;
-    if (!g) return;
-
-    const selectedIndex = selectedIndexRef.current;
-    const selectedIndices = selectedIndex !== null ? [selectedIndex] : [];
-
-    const { parents, children } = computeParentsChildren(
-      selectedIndices,
-      linksRef.current
-    );
-
-    void applyColors(selectedIndices, parents, children, { zoomToSelected: false });
-  }, [focusMode, applyColors]);
 
   useEffect(() => {
     const g = graphInstance.current;
@@ -654,22 +608,8 @@ export function useGraph(
       simulationDecay: 0,
 
       onClick: (index) => {
-        if (index === null || index === undefined) {
-          selectNodeByIndex(undefined);
-          return;
-        }
-
-        if (focusModeRef.current === "on") {
-          if (focusedNodeIndicesRef.current.has(index)) {
-            selectNodeByIndex(index, { zoom: false });
-          } else {
-            void addToFocusedNodes(index);
-          }
-
-          return;
-        }
-
-        selectNodeByIndex(index, { zoom: false });
+        if (index === null || index === undefined) selectNodeByIndex(undefined);
+        else selectNodeByIndex(index, { zoom: false });
       },
 
       onPointMouseOver: (index, pointPos) => {
@@ -686,15 +626,6 @@ export function useGraph(
         if (tooltipDragActiveRef.current) return;
 
         if (index == null || !pointPos) {
-          hoverIndexRef.current = null;
-          setHoverTooltip(null);
-          return;
-        }
-
-        if (
-          focusModeRef.current === "on" &&
-          !focusedNodeIndicesRef.current.has(index)
-        ) {
           hoverIndexRef.current = null;
           setHoverTooltip(null);
           return;
@@ -795,53 +726,6 @@ export function useGraph(
     void applyColors(selectedIndices, parents, children, { zoomToSelected: false });
   }, [pointPositions, links, applyColors]);
 
-  const addToFocusedNodes = useCallback(
-    async (index: number) => {
-      if (!setFocusedNodeIndices || !parentChildrenCacheRef) return;
-
-      const uuid = currentGraphUUIDRef.current;
-      if (!uuid) return;
-
-      try {
-        // Add only the node itself to the focused set
-        setFocusedNodeIndices((prev) => {
-          const newSet = new Set(prev);
-          newSet.add(index);
-          return newSet;
-        });
-      } catch (err) {
-        console.error("Error adding to focused nodes:", err);
-      }
-    },
-    [setFocusedNodeIndices, parentChildrenCacheRef]
-  );
-
-  const removeFromFocusedNodes = useCallback(
-    (index: number) => {
-      if (!setFocusedNodeIndices) return;
-
-      setFocusedNodeIndices((prev) => {
-        const newSet = new Set(prev);
-        newSet.delete(index);
-        return newSet;
-      });
-
-      // Also remove from cache
-      if (parentChildrenCacheRef) {
-        parentChildrenCacheRef.current.delete(index);
-      }
-    },
-    [setFocusedNodeIndices, parentChildrenCacheRef]
-  );
-
-  const clearFocusedNodes = useCallback(() => {
-    if (!setFocusedNodeIndices) return;
-    setFocusedNodeIndices(new Set());
-    if (parentChildrenCacheRef) {
-      parentChildrenCacheRef.current.clear();
-    }
-  }, [setFocusedNodeIndices, parentChildrenCacheRef]);
-
   return {
     fitView,
     selectNodeByIndex,
@@ -850,8 +734,5 @@ export function useGraph(
     highlightSearchResults,
     highlightResultHover,
     startDragFromTooltip,
-    addToFocusedNodes,
-    removeFromFocusedNodes,
-    clearFocusedNodes,
   };
 }

@@ -75,10 +75,6 @@ export const applyGraphColors = (args: {
   const parentsSet = new Set<number>(parents);
   const childrenSet = new Set<number>(children);
 
-  const FOCUSED_LINK = COLOR_DEFAULT_LINK;
-  const PARENT_LINK_SOLID = hexToRgba01(colors.parent, 1.0);
-  const CHILD_LINK_SOLID = hexToRgba01(colors.child, 1.0);
-
   // Links
   for (let i = 0; i < links.length; i += 2) {
     const edgeIndex = i / 2;
@@ -88,26 +84,14 @@ export const applyGraphColors = (args: {
     let color = [...COLOR_DEFAULT_LINK.slice(0, 3), 0.6] as [number, number, number, number];
     let width = 2;
 
-    let isRelated = false;
     if (selectedSet.size > 0) {
       if (selectedSet.has(target)) {
         color = PARENT_POINT;
         width = 3;
-        isRelated = true;
       } else if (selectedSet.has(source)) {
         color = CHILD_POINT;
         width = 3;
-        isRelated = true;
       }
-    }
-
-    if (focusedNodeIndices.has(source) || focusedNodeIndices.has(target)) {
-      if (isRelated) {
-        color = selectedSet.has(target) ? PARENT_LINK_SOLID : CHILD_LINK_SOLID;
-      } else {
-        color = FOCUSED_LINK;
-      }
-      width = Math.max(width, 3);
     }
 
     const isMaskedLink = focusMode === "on" && !focusedNodeIndices.has(source) && !focusedNodeIndices.has(target);
@@ -123,26 +107,23 @@ export const applyGraphColors = (args: {
   for (let i = 0; i < pointCount; i++) {
     let color = DEFAULT_POINT;
     let pointSize = size;
-    const isFocused = focusedNodeIndices.has(i);
 
     if (hoveredCardIndex != null && hoveredCardIndex === i) {
-      color = isFocused ? HOVER_POINT_SOLID : HOVER_POINT;
-      pointSize = size * 1.75;
-    } else if (selectedSet.has(i)) {
-      color = isFocused ? SELECTED_POINT_SOLID : SELECTED_POINT;
-    } else if (parentsSet.has(i)) {
-      color = isFocused ? PARENT_POINT_SOLID : PARENT_POINT;
-    } else if (childrenSet.has(i)) {
-      color = isFocused ? CHILD_POINT_SOLID : CHILD_POINT;
-    } else if (searchSet.has(i)) {
-      color = isFocused ? SEARCH_POINT_SOLID : SEARCH_POINT;
-      pointSize = size * 1.5;
-    } else if (isFocused) {
-      color = DEFAULT_POINT_SOLID;
+        color = HOVER_POINT;
+        pointSize = size * 1.75;
+      }
+    else if (selectedSet.has(i)) {
+      color = SELECTED_POINT;
     }
-
-    if (isFocused) {
-      pointSize = Math.max(pointSize, size * 1.5);
+    else if (parentsSet.has(i)) {
+      color = PARENT_POINT;
+    }
+    else if (childrenSet.has(i)) {
+      color = CHILD_POINT;
+    }
+    else if (searchSet.has(i)) {
+      color = SEARCH_POINT;
+      pointSize = size * 1.5;
     }
 
     if (focusMode === "on" && !isFocused) {
