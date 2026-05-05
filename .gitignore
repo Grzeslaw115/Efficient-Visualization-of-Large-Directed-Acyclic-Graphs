@@ -183,6 +183,7 @@ app/frontend/.DS_Store
 app/frontend/*.log
 app/frontend/.env
 app/frontend/vite-env.d.ts
+node_modules/
 
 # zależności
 app/frontend/yarn.lock
