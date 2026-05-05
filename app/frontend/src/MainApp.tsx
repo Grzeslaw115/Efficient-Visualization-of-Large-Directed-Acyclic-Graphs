@@ -355,7 +355,19 @@ export default function MainApp() {
             y={tt.y}
             content={tt.content}
             onPointerDown={(e) => startDragFromTooltip(tt.index, e)}
-            onClick={() => focusMode === "on" ? addToFocusedNodes(tt.index) : selectNodeByIndex(tt.index, {zoom: false})}
+            onClick={() => {
+              if (focusMode !== "on") {
+                selectNodeByIndex(tt.index, { zoom: false });
+                return;
+              }
+
+              if (focusedNodes.includes(tt.index)) {
+                selectNodeByIndex(tt.index, { zoom: false });
+                return;
+              }
+
+              void addToFocusedNodes(tt.index);
+            }}
           />
         ))}
 
