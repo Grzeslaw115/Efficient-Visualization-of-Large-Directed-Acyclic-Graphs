@@ -149,7 +149,10 @@ export default function MainApp() {
 
     currentGraphUUID,
     currentGraphHash,
-    onGraphLoaded: () => setFocusMode("off"),
+    onGraphLoaded: () => {
+      clearFocusedNodes();
+      setFocusMode("off");
+    },
   });
 
   const toast = useAppToast();
