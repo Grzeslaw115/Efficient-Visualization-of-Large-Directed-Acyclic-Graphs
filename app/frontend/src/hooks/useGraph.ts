@@ -26,6 +26,8 @@ import type { GraphColors } from "../graph/types";
 type UseGraphInitialConfig = {
   pointSize?: number;
   colors?: GraphColors;
+  maskedPointOpacity?: number;
+  maskedLinkOpacity?: number;
 };
 
 export function useGraph(
@@ -34,7 +36,11 @@ export function useGraph(
   links: Float32Array,
   setSelectedNode: Dispatch<SetStateAction<NodeInfoProps | null>>,
   initialConfig?: UseGraphInitialConfig,
-  names?: string[]
+  names?: string[],
+  focusMode?: "off" | "on",
+  focusedNodeIndices?: Set<number>,
+  setFocusedNodeIndices?: Dispatch<SetStateAction<Set<number>>>,
+  parentChildrenCacheRef?: React.MutableRefObject<Map<number, { parents: number[]; children: number[] }>>
 ) {
   /* -------------------------------------------------------------------------- */
   /* Core refs and state                                                        */
@@ -55,6 +61,8 @@ export function useGraph(
   const highlightTokenRef = useRef(0);
   const searchIndicesRef = useRef<Set<number>>(new Set());
   const hoveredCardIndexRef = useRef<number | null>(null);
+  const focusModeRef = useRef<"off" | "on">(focusMode ?? "off");
+  const focusedNodeIndicesRef = useRef<Set<number>>(focusedNodeIndices ?? new Set());
 
   const appContext = useContext(AppContext);
   const currentGraphUUID = appContext?.currentGraphUUID;
@@ -64,6 +72,8 @@ export function useGraph(
     initialConfig?.colors ?? DEFAULT_GRAPH_COLORS
   );
   const sizeRef = useRef<number>(initialConfig?.pointSize ?? 1);
+  const maskedPointOpacityRef = useRef<number>(initialConfig?.maskedPointOpacity ?? 0.2);
+  const maskedLinkOpacityRef = useRef<number>(initialConfig?.maskedLinkOpacity ?? 0.2);
 
   const getName = useCallback(
     (idx: number) => namesCacheRef.current.get(idx) ?? `Node ${idx}`,
@@ -100,6 +110,22 @@ export function useGraph(
   useEffect(() => {
     sizeRef.current = initialConfig?.pointSize ?? 1;
   }, [initialConfig?.pointSize]);
+
+  useEffect(() => {
+    maskedPointOpacityRef.current = initialConfig?.maskedPointOpacity ?? 0.2;
+  }, [initialConfig?.maskedPointOpacity]);
+
+  useEffect(() => {
+    maskedLinkOpacityRef.current = initialConfig?.maskedLinkOpacity ?? 0.2;
+  }, [initialConfig?.maskedLinkOpacity]);
+
+  useEffect(() => {
+    focusModeRef.current = focusMode ?? "off";
+  }, [focusMode]);
+
+  useEffect(() => {
+    focusedNodeIndicesRef.current = focusedNodeIndices ?? new Set();
+  }, [focusedNodeIndices]);
 
   useEffect(() => {
     currentGraphUUIDRef.current = currentGraphUUID ?? null;
@@ -165,8 +191,16 @@ export function useGraph(
       return;
     }
 
+    // In focused mode, only show tooltips for focused nodes
+    let indicesToShow = highlightedIndicesRef.current;
+    if (focusModeRef.current === "on") {
+      indicesToShow = highlightedIndicesRef.current.filter((idx) =>
+        focusedNodeIndicesRef.current.has(idx)
+      );
+    }
+
     setTooltips(
-      computePinnedTooltips(g, el, highlightedIndicesRef.current, getName)
+      computePinnedTooltips(g, el, indicesToShow, getName)
     );
   }, [graphRef, getName]);
 
@@ -227,6 +261,10 @@ export function useGraph(
         children,
         searchSet: searchIndicesRef.current,
         hoveredCardIndex: hoveredCardIndexRef.current,
+        focusMode: focusModeRef.current,
+        focusedNodeIndices: focusedNodeIndicesRef.current,
+        maskedPointOpacity: maskedPointOpacityRef.current,
+        maskedLinkOpacity: maskedLinkOpacityRef.current,
       });
 
       const hoverIdx = hoverIndexRef.current;
@@ -260,6 +298,22 @@ export function useGraph(
     [recomputeTooltipsPositions]
   );
 
+  // Trigger color re-application when focused nodes or focus mode changes
+  useEffect(() => {
+    const g = graphInstance.current;
+    if (!g) return;
+
+    const selectedIndex = selectedIndexRef.current;
+    const selectedIndices = selectedIndex !== null ? [selectedIndex] : [];
+
+    const { parents, children } = computeParentsChildren(
+      selectedIndices,
+      linksRef.current
+    );
+
+    void applyColors(selectedIndices, parents, children, { zoomToSelected: false });
+  }, [focusedNodeIndices, focusMode, applyColors]);
+
   useEffect(() => {
     const g = graphInstance.current;
     if (!g) return;
@@ -282,6 +336,8 @@ export function useGraph(
     initialConfig?.colors?.search,
     initialConfig?.colors?.background,
     initialConfig?.pointSize,
+    initialConfig?.maskedPointOpacity,
+    initialConfig?.maskedLinkOpacity,
     applyColors,
   ]);
 
@@ -582,8 +638,22 @@ export function useGraph(
       simulationDecay: 0,
 
       onClick: (index) => {
-        if (index === null || index === undefined) selectNodeByIndex(undefined);
-        else selectNodeByIndex(index, { zoom: false });
+        if (index === null || index === undefined) {
+          selectNodeByIndex(undefined);
+          return;
+        }
+
+        if (focusModeRef.current === "on") {
+          if (focusedNodeIndicesRef.current.has(index)) {
+            selectNodeByIndex(index, { zoom: false });
+          } else {
+            void addToFocusedNodes(index);
+          }
+
+          return;
+        }
+
+        selectNodeByIndex(index, { zoom: false });
       },
 
       onPointMouseOver: (index, pointPos) => {
@@ -600,6 +670,15 @@ export function useGraph(
         if (tooltipDragActiveRef.current) return;
 
         if (index == null || !pointPos) {
+          hoverIndexRef.current = null;
+          setHoverTooltip(null);
+          return;
+        }
+
+        if (
+          focusModeRef.current === "on" &&
+          !focusedNodeIndicesRef.current.has(index)
+        ) {
           hoverIndexRef.current = null;
           setHoverTooltip(null);
           return;
@@ -700,6 +779,50 @@ export function useGraph(
     void applyColors(selectedIndices, parents, children, { zoomToSelected: false });
   }, [pointPositions, links, applyColors]);
 
+  const addToFocusedNodes = useCallback(
+    (index: number) => {
+      if (!setFocusedNodeIndices) return;
+
+      try {
+        setFocusedNodeIndices((prev) => {
+          if (prev.has(index)) return prev;
+          const newSet = new Set(prev);
+          newSet.add(index);
+          return newSet;
+        });
+      } catch (err) {
+        console.error("Error adding to focused nodes:", err);
+      }
+    },
+    [setFocusedNodeIndices]
+  );
+
+  const removeFromFocusedNodes = useCallback(
+    (index: number) => {
+      if (!setFocusedNodeIndices) return;
+
+      setFocusedNodeIndices((prev) => {
+        const newSet = new Set(prev);
+        newSet.delete(index);
+        return newSet;
+      });
+
+      // Also remove from cache
+      if (parentChildrenCacheRef) {
+        parentChildrenCacheRef.current.delete(index);
+      }
+    },
+    [setFocusedNodeIndices, parentChildrenCacheRef]
+  );
+
+  const clearFocusedNodes = useCallback(() => {
+    if (!setFocusedNodeIndices) return;
+    setFocusedNodeIndices(new Set());
+    if (parentChildrenCacheRef) {
+      parentChildrenCacheRef.current.clear();
+    }
+  }, [setFocusedNodeIndices, parentChildrenCacheRef]);
+
   return {
     fitView,
     selectNodeByIndex,
@@ -708,5 +831,8 @@ export function useGraph(
     highlightSearchResults,
     highlightResultHover,
     startDragFromTooltip,
+    addToFocusedNodes,
+    removeFromFocusedNodes,
+    clearFocusedNodes,
   };
 }
