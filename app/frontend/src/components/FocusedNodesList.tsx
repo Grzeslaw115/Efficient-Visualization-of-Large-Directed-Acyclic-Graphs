@@ -76,12 +76,6 @@ const FocusedNodesList: React.FC<FocusedNodesListProps> = ({
           </div>
         ))}
       </div>
-
-      {nodeIndices.length === 0 && (
-        <div className="px-4 py-6 text-center text-sm text-gray-500 dark:text-gray-400">
-          No focused nodes
-        </div>
-      )}
     </motion.div>
   );
 };
