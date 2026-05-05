@@ -40,6 +40,7 @@ const FocusedNodesList: React.FC<FocusedNodesListProps> = ({
           onClick={onClear}
           className="p-1 hover:bg-black/10 dark:hover:bg-white/10 rounded-lg transition"
           title="Clear all focused nodes"
+          aria-label="Clear all focused nodes"
         >
           <Trash2 size={16} className="text-gray-600 dark:text-gray-400" />
         </button>
@@ -67,6 +68,7 @@ const FocusedNodesList: React.FC<FocusedNodesListProps> = ({
               onClick={() => onRemoveNode(index)}
               className="ml-2 p-1 opacity-0 group-hover:opacity-100 hover:bg-red-500/20 dark:hover:bg-red-900/20 rounded transition"
               title="Remove from focused nodes"
+              aria-label={`Remove node ${getNodeName(index)} from focused nodes`}
             >
               <X
                 size={14}

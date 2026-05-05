@@ -298,7 +298,7 @@ export function useGraph(
     [recomputeTooltipsPositions]
   );
 
-  // Trigger color re-application when focused nodes change
+  // Trigger color re-application when focused nodes or focus mode changes
   useEffect(() => {
     const g = graphInstance.current;
     if (!g) return;
@@ -312,23 +312,7 @@ export function useGraph(
     );
 
     void applyColors(selectedIndices, parents, children, { zoomToSelected: false });
-  }, [focusedNodeIndices, applyColors]);
-
-  // Trigger color re-application when focus mode changes
-  useEffect(() => {
-    const g = graphInstance.current;
-    if (!g) return;
-
-    const selectedIndex = selectedIndexRef.current;
-    const selectedIndices = selectedIndex !== null ? [selectedIndex] : [];
-
-    const { parents, children } = computeParentsChildren(
-      selectedIndices,
-      linksRef.current
-    );
-
-    void applyColors(selectedIndices, parents, children, { zoomToSelected: false });
-  }, [focusMode, applyColors]);
+  }, [focusedNodeIndices, focusMode, applyColors]);
 
   useEffect(() => {
     const g = graphInstance.current;
@@ -796,15 +780,12 @@ export function useGraph(
   }, [pointPositions, links, applyColors]);
 
   const addToFocusedNodes = useCallback(
-    async (index: number) => {
-      if (!setFocusedNodeIndices || !parentChildrenCacheRef) return;
-
-      const uuid = currentGraphUUIDRef.current;
-      if (!uuid) return;
+    (index: number) => {
+      if (!setFocusedNodeIndices) return;
 
       try {
-        // Add only the node itself to the focused set
         setFocusedNodeIndices((prev) => {
+          if (prev.has(index)) return prev;
           const newSet = new Set(prev);
           newSet.add(index);
           return newSet;
@@ -813,7 +794,7 @@ export function useGraph(
         console.error("Error adding to focused nodes:", err);
       }
     },
-    [setFocusedNodeIndices, parentChildrenCacheRef]
+    [setFocusedNodeIndices]
   );
 
   const removeFromFocusedNodes = useCallback(

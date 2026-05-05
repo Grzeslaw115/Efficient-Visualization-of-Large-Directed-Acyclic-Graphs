@@ -311,16 +311,24 @@ export default function MainApp() {
   };
 
   const handleFocusModeToggle = () => {
-    const newMode = focusMode === "off" ? "on" : "off";
+    const isTurningOn = focusMode === "off";
+    const newMode = isTurningOn ? "on" : "off";
+
     setFocusMode(newMode);
-    if (newMode === "on") {
-      focusedNodeIndices.clear();
+
+    if (isTurningOn) {
+      setFocusedNodeIndices(new Set());
+
+      if (parentChildrenCacheRef.current) {
+        parentChildrenCacheRef.current.clear();
+      }
+      
       toast.showInfo("Focus mode on - click nodes to add them and their connections");
     } else {
       toast.showInfo("Focus mode off");
-      clearFocusedNodes();
+      clearFocusedNodes(); 
     }
-  }
+  };
 
   const clamp01 = (v: number) => Math.max(0, Math.min(1, v));
 
