@@ -1,11 +1,14 @@
-// init.js
-db = db.getSiblingDB("inz");
+const appDbName = process.env.MONGO_DB_NAME || "inz";
+const appUsername = process.env.MONGO_APP_USERNAME || "inz_user";
+const appPassword = process.env.MONGO_APP_PASSWORD || "devpass";
+
+db = db.getSiblingDB(appDbName);
 
 db.createUser({
-    user: "inz_user",
-    pwd: "devpass",
+    user: appUsername,
+    pwd: appPassword,
     roles: [
-        { role: "readWrite", db: "inz" },
-        { role: "dbAdmin", db: "inz" }
+        { role: "readWrite", db: appDbName },
+        { role: "dbAdmin", db: appDbName }
     ]
 });
