@@ -7,7 +7,7 @@ services:
       MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD:?Set MONGO_ROOT_PASSWORD in .env}
       MONGO_APP_USERNAME: ${MONGO_APP_USERNAME:?Set MONGO_APP_USERNAME in .env}
       MONGO_APP_PASSWORD: ${MONGO_APP_PASSWORD:?Set MONGO_APP_PASSWORD in .env}
-      MONGO_DB_NAME: ${MONGO_DB_NAME:-inz}
+      MONGO_DB_NAME: ${MONGO_DB_NAME:-dagmara}
     volumes:
       - mongo_data:/data/db
       - ./init.js:/docker-entrypoint-initdb.d/init.js:ro
@@ -44,8 +44,8 @@ services:
     build:
       context: ./app/python-backend
     environment:
-      MONGODB_URI: mongodb://${MONGO_APP_USERNAME:?Set MONGO_APP_USERNAME in .env}:${MONGO_APP_PASSWORD:?Set MONGO_APP_PASSWORD in .env}@mongo:27017/${MONGO_DB_NAME:-inz}?authSource=${MONGO_DB_NAME:-inz}
-      MONGO_DB_NAME: ${MONGO_DB_NAME:-inz}
+      MONGODB_URI: mongodb://${MONGO_APP_USERNAME:?Set MONGO_APP_USERNAME in .env}:${MONGO_APP_PASSWORD:?Set MONGO_APP_PASSWORD in .env}@mongo:27017/${MONGO_DB_NAME:-dagmara}?authSource=${MONGO_DB_NAME:-dagmara}
+      MONGO_DB_NAME: ${MONGO_DB_NAME:-dagmara}
       SERVICE_IP_ADDRESS: 0.0.0.0
       SERVICE_PORT: ${SERVICE_PORT:-30301}
       LAYOUT_SERVICE_IP_ADDRESS: cpp-backend
