@@ -75,8 +75,9 @@ services:
   frontend:
     build:
       context: ./app/frontend
+      dockerfile: Dockerfile.prod
     ports:
-      - "${FRONTEND_PORT:-30306}:30306"
+      - "${FRONTEND_PORT:-8080}:80"
     networks:
       - public
       - app-internal
@@ -88,7 +89,7 @@ services:
       test:
         [
           "CMD-SHELL",
-          "node -e \"fetch('http://127.0.0.1:30306').then((res) => process.exit(res.ok ? 0 : 1)).catch(() => process.exit(1))\"",
+          "wget -q --spider http://127.0.0.1/ || exit 1",
         ]
       interval: 30s
       timeout: 5s
