@@ -28,6 +28,7 @@ services:
   cpp-backend:
     build:
       context: ./app/cpp-backend
+      dockerfile: Dockerfile.prod
     expose:
       - "30311"
     networks:
@@ -38,7 +39,7 @@ services:
       interval: 15s
       timeout: 5s
       retries: 12
-      start_period: 90s
+      start_period: 30s
 
   python-backend:
     build:
@@ -47,12 +48,14 @@ services:
       MONGODB_URI: mongodb://${MONGO_APP_USERNAME:?Set MONGO_APP_USERNAME in .env}:${MONGO_APP_PASSWORD:?Set MONGO_APP_PASSWORD in .env}@mongo:27017/${MONGO_DB_NAME:-dagmara}?authSource=${MONGO_DB_NAME:-dagmara}
       MONGO_DB_NAME: ${MONGO_DB_NAME:-dagmara}
       SERVICE_IP_ADDRESS: 0.0.0.0
-      SERVICE_PORT: ${SERVICE_PORT:-30301}
-      LAYOUT_SERVICE_IP_ADDRESS: ${LAYOUT_SERVICE_IP_ADDRESS:-cpp-backend}
-      LAYOUT_SERVICE_PORT: ${LAYOUT_SERVICE_PORT:-30311}
+      SERVICE_PORT: 30301
+      LAYOUT_SERVICE_IP_ADDRESS: cpp-backend
+      LAYOUT_SERVICE_PORT: 30311
       MAX_CONTENT_LENGTH_MB: ${MAX_CONTENT_LENGTH_MB:-100}
+      GUNICORN_WORKERS: ${GUNICORN_WORKERS:-2}
+      GUNICORN_TIMEOUT: ${GUNICORN_TIMEOUT:-1200}
     expose:
-      - "${SERVICE_PORT:-30301}"
+      - "30301"
     networks:
       - app-internal
     restart: unless-stopped
@@ -65,7 +68,7 @@ services:
       test:
         [
           "CMD-SHELL",
-          "python -c \"import socket; s=socket.create_connection(('127.0.0.1', ${SERVICE_PORT:-30301}), 5); s.close()\"",
+          "python -c \"import socket; s=socket.create_connection(('127.0.0.1', 30301), 5); s.close()\"",
         ]
       interval: 15s
       timeout: 5s
