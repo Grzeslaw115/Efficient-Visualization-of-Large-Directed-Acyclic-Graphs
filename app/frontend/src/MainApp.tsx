@@ -582,15 +582,33 @@ export default function MainApp() {
 
       {loader.graphListOpen && (
         <GraphListModal
-        list={loader.graphList}
-        onSelect={async (id) => {
-          try {
-            await loader.handleSelectGraphFromDb(id);
-          } catch (e) {
-            toast.showError(e instanceof Error ? e.message : "Failed to load graph");
-          }
-        }}
-        onClose={() => loader.setGraphListOpen(false)}
+          list={loader.graphList}
+          onSelect={async (id) => {
+            try {
+              await loader.handleSelectGraphFromDb(id);
+            } catch (e) {
+              toast.showError(e instanceof Error ? e.message : "Failed to load graph");
+            }
+          }}
+          onRemoveFromGroup={async (id) => {
+            try {
+              await loader.handleRemoveGraphFromGroup(id);
+              toast.showInfo("Graph removed from group.");
+            } catch (e) {
+              toast.showError(
+                e instanceof Error ? e.message : "Failed to remove graph from group"
+              );
+            }
+          }}
+          onDeleteGraph={async (id) => {
+            try {
+              await loader.handleDeleteGraphFromDb(id);
+              toast.showInfo("Graph deleted.");
+            } catch (e) {
+              toast.showError(e instanceof Error ? e.message : "Failed to delete graph");
+            }
+          }}
+          onClose={() => loader.setGraphListOpen(false)}
         />
       )}
 

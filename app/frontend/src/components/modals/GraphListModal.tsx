@@ -1,6 +1,6 @@
 import React from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Database, Clock, Hash } from "lucide-react";
+import { X, Database, Clock, Hash, Trash2, Unlink2 } from "lucide-react";
 
 interface GraphListModalProps {
   list: {
@@ -10,12 +10,16 @@ interface GraphListModalProps {
     last_entry_update?: string;
   }[];
   onSelect: (id: string) => void;
+  onRemoveFromGroup?: (id: string) => void | Promise<void>;
+  onDeleteGraph?: (id: string) => void | Promise<void>;
   onClose: () => void;
 }
 
 const GraphListModal: React.FC<GraphListModalProps> = ({
   list,
   onSelect,
+  onRemoveFromGroup,
+  onDeleteGraph,
   onClose,
 }) => {
   const formatDate = (iso?: string) => {
@@ -115,15 +119,14 @@ const GraphListModal: React.FC<GraphListModalProps> = ({
             )}
 
             {list.map((g) => (
-              <button
+              <div
                 key={g.id}
-                onClick={() => onSelect(g.id)}
                 className="
-                  w-full text-left rounded-lg
+                  w-full rounded-lg
                   border border-transparent
                   px-3 py-2.5
                   transition
-                  flex flex-col gap-1
+                  flex flex-col gap-2
 
                   bg-white hover:bg-black/3
                   hover:border-blue-600/30
@@ -133,9 +136,15 @@ const GraphListModal: React.FC<GraphListModalProps> = ({
                 "
               >
                 <div className="flex items-center justify-between gap-2">
-                  <div className="font-medium text-[13px] truncate text-gray-900 dark:text-gray-100">
-                    {g.name || "(no name)"}
-                  </div>
+                  <button
+                    type="button"
+                    onClick={() => onSelect(g.id)}
+                    className="min-w-0 flex-1 text-left"
+                  >
+                    <div className="font-medium text-[13px] truncate text-gray-900 dark:text-gray-100">
+                      {g.name || "(no name)"}
+                    </div>
+                  </button>
 
                   {typeof g.num_of_vertices === "number" && (
                     <div className="text-[11px] whitespace-nowrap text-gray-600 dark:text-gray-400">
@@ -144,20 +153,72 @@ const GraphListModal: React.FC<GraphListModalProps> = ({
                   )}
                 </div>
 
-                <div className="flex flex-wrap items-center gap-2 text-[11px] text-gray-600 dark:text-gray-400">
-                  <div className="inline-flex items-center gap-1">
-                    <Hash size={11} />
-                    <span className="font-mono break-all">{g.id}</span>
+                <button
+                  type="button"
+                  onClick={() => onSelect(g.id)}
+                  className="text-left"
+                >
+                  <div className="flex flex-wrap items-center gap-2 text-[11px] text-gray-600 dark:text-gray-400">
+                    <div className="inline-flex items-center gap-1">
+                      <Hash size={11} />
+                      <span className="font-mono break-all">{g.id}</span>
+                    </div>
                   </div>
-                </div>
+                </button>
 
                 {g.last_entry_update && (
-                  <div className="flex items-center gap-1.5 text-[10px] text-gray-500 mt-0.5 dark:text-gray-500">
-                    <Clock size={11} />
-                    <span>{formatDate(g.last_entry_update)}</span>
+                  <button
+                    type="button"
+                    onClick={() => onSelect(g.id)}
+                    className="text-left"
+                  >
+                    <div className="flex items-center gap-1.5 text-[10px] text-gray-500 mt-0.5 dark:text-gray-500">
+                      <Clock size={11} />
+                      <span>{formatDate(g.last_entry_update)}</span>
+                    </div>
+                  </button>
+                )}
+
+                {(onRemoveFromGroup || onDeleteGraph) && (
+                  <div className="flex flex-wrap items-center justify-end gap-2 pt-1">
+                    {onRemoveFromGroup && (
+                      <button
+                        type="button"
+                        onClick={() => onRemoveFromGroup(g.id)}
+                        className="
+                          inline-flex items-center gap-1.5
+                          rounded-lg px-2.5 py-1.5
+                          text-[11px] font-medium transition
+                          border border-amber-500/20 bg-amber-500/8 text-amber-700 hover:bg-amber-500/14
+
+                          dark:border-amber-400/20 dark:bg-amber-400/10 dark:text-amber-300 dark:hover:bg-amber-400/16
+                        "
+                      >
+                        <Unlink2 size={12} />
+                        Remove from group
+                      </button>
+                    )}
+
+                    {onDeleteGraph && (
+                      <button
+                        type="button"
+                        onClick={() => onDeleteGraph(g.id)}
+                        className="
+                          inline-flex items-center gap-1.5
+                          rounded-lg px-2.5 py-1.5
+                          text-[11px] font-medium transition
+                          border border-red-500/20 bg-red-500/8 text-red-700 hover:bg-red-500/14
+
+                          dark:border-red-400/20 dark:bg-red-400/10 dark:text-red-300 dark:hover:bg-red-400/16
+                        "
+                      >
+                        <Trash2 size={12} />
+                        Delete graph
+                      </button>
+                    )}
                   </div>
                 )}
-              </button>
+              </div>
             ))}
           </div>
 

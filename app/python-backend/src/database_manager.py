@@ -233,6 +233,14 @@ class MongoDatabaseManager:
             {"_id": graph_id}, {"$set": {"group": group_name}}
         )
 
+    def remove_graph_from_group(self, graph_id: Union[ObjectId, str]) -> None:
+        if isinstance(graph_id, str):
+            graph_id = self._convert_to_object_id(graph_id)
+
+        self.db[self.GRAPH_DATA_COLLECTION].update_one(
+            {"_id": graph_id}, {"$unset": {"group": ""}}
+        )
+
     def list_graphs_for_group(self, group_name: str) -> List[Dict[str, Any]]:
         """
         Returns list of graphs in given group with following fields:

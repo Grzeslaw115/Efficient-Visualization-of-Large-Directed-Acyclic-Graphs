@@ -5,10 +5,12 @@ import type { GraphColors } from "../graph/types";
 import {
   getGroups,
   getGraphsInGroup,
+  removeGraphFromGroup,
   type GroupInfo,
   type GraphListItem,
 } from "../graph/api/groups";
 import {
+  deleteGraph,
   loadGraphByHash,
   loadGraphFromJson,
   makeGraphStructure,
@@ -95,6 +97,8 @@ export function useGraphLoader(params: {
 
   const [graphList, setGraphList] = React.useState<GraphListItem[]>([]);
   const [graphListOpen, setGraphListOpen] = React.useState(false);
+  const [activeGroupName, setActiveGroupName] = React.useState<string | null>(null);
+  const [activeGroupPassword, setActiveGroupPassword] = React.useState<string | null>(null);
 
   const [loadFromDbError, setLoadFromDbError] = React.useState<string | null>(null);
   const [loadFromDbLoading, setLoadFromDbLoading] = React.useState(false);
@@ -214,6 +218,8 @@ export function useGraphLoader(params: {
         }
 
         setGraphList(list);
+        setActiveGroupName(groupName);
+        setActiveGroupPassword(password);
         setGraphListOpen(true);
       } catch (e) {
         const msg = errMessage(e, "Unexpected error while loading graphs from DB.");
@@ -245,6 +251,59 @@ export function useGraphLoader(params: {
       }
     },
     [fitView]
+  );
+
+  const handleDeleteGraphFromDb = React.useCallback(
+    async (graphId: string) => {
+      try {
+        setLoadFromDbLoading(true);
+        setLoadFromDbError(null);
+
+        await deleteGraph(graphId, activeGroupPassword ?? undefined);
+
+        setGraphList((prev) => prev.filter((graph) => graph.id !== graphId));
+
+        if (currentGraphHash === graphId) {
+          setCurrentGraphHash(null);
+          clearHashInUrl();
+        }
+      } catch (e) {
+        const msg = errMessage(e, "Failed to delete graph from database.");
+        setLoadFromDbError(msg);
+        throw new Error(msg);
+      } finally {
+        setLoadFromDbLoading(false);
+      }
+    },
+    [activeGroupPassword, currentGraphHash, setCurrentGraphHash]
+  );
+
+  const handleRemoveGraphFromGroup = React.useCallback(
+    async (graphId: string) => {
+      if (!activeGroupName || !activeGroupPassword) {
+        throw new Error("Missing active group credentials.");
+      }
+
+      try {
+        setLoadFromDbLoading(true);
+        setLoadFromDbError(null);
+
+        await removeGraphFromGroup(activeGroupName, graphId, activeGroupPassword);
+        setGraphList((prev) => prev.filter((graph) => graph.id !== graphId));
+
+        if (currentGraphHash === graphId) {
+          setCurrentGraphHash(null);
+          clearHashInUrl();
+        }
+      } catch (e) {
+        const msg = errMessage(e, "Failed to remove graph from group.");
+        setLoadFromDbError(msg);
+        throw new Error(msg);
+      } finally {
+        setLoadFromDbLoading(false);
+      }
+    },
+    [activeGroupName, activeGroupPassword, currentGraphHash, setCurrentGraphHash]
   );
 
   // load by hash modal
@@ -465,6 +524,8 @@ export function useGraphLoader(params: {
     loadFromDbLoading,
     handleLoadFromDbSubmit,
     handleSelectGraphFromDb,
+    handleDeleteGraphFromDb,
+    handleRemoveGraphFromGroup,
 
     loadError,
     loadLoading,

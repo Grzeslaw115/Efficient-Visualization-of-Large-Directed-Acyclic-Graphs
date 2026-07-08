@@ -26,3 +26,18 @@ export function getGraphsInGroup(groupName: string, password: string) {
     }
   );
 }
+
+export function removeGraphFromGroup(
+  groupName: string,
+  graphId: string,
+  password: string
+) {
+  return fetchJson<{ status: string }>(
+    `${API_BASE}/groups/${encodeURIComponent(groupName)}/graphs/${encodeURIComponent(graphId)}`,
+    {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ password }),
+    }
+  );
+}

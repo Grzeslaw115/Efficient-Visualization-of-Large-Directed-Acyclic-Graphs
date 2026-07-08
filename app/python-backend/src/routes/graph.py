@@ -314,7 +314,7 @@ def save_graph_to_db(graph_uuid: str):
     layout = _linearized_layout_to_pairs(linearized_layout)
     vertices_metadata = _build_vertex_metadata_for_graph(G_gt)
 
-    additional_config_keys = ["point_size", "space_size", "group_name"]
+    additional_config_keys = ["point_size", "space_size"]
     additional_config = {
         key: data.get(key) for key in additional_config_keys if key in data
     }
@@ -568,4 +568,27 @@ def update_graph_config(graph_hash: str):
         logger.exception("Failed to update graph config")
         return jsonify({"error": str(e)}), 500
 
+    return jsonify({"status": "ok"}), 200
+
+
+@graph_bp.route("/graph/<string:graph_hash>", methods=["DELETE"])
+def delete_graph_from_db(graph_hash: str):
+    db_manager = get_db_manager()
+
+    graph_data = db_manager.fetch_data(graph_hash)
+    if graph_data is None:
+        return jsonify({"error": "Graph not found"}), 404
+
+    data = request.get_json(silent=True) or {}
+
+    group_name = graph_data.get("group")
+    if group_name is not None: # graf w grupie wymaga podania hasła grupy do usunięcia
+        password = data.get("password")
+        if not password:
+            return jsonify({"error": "Password is required for deleting a graph from a group"}), 400
+
+        if not db_manager.verify_group_password(group_name, password):
+            return jsonify({"error": "Invalid group password"}), 403
+
+    db_manager.delete_entry(graph_hash)
     return jsonify({"status": "ok"}), 200

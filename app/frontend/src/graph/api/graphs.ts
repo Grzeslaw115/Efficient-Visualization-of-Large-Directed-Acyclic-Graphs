@@ -95,3 +95,14 @@ export async function updateGraphConfig(hash: string, payload: any, signal?: Abo
     signal,
   });
 }
+
+export async function deleteGraph(hash: string, password?: string) {
+  return fetchJson<{ status: string }>(
+    `${API_BASE}/graph/${encodeURIComponent(hash)}`,
+    {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(password ? { password } : {}),
+    }
+  );
+}
