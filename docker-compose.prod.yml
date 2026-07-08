@@ -28,7 +28,7 @@ services:
   cpp-backend:
     build:
       context: ./app/cpp-backend
-      dockerfile: Dockerfile.prod
+      dockerfile: Dockerfile
     expose:
       - "30311"
     networks:
