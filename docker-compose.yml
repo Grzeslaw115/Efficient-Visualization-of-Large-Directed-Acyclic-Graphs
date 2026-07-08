@@ -4,11 +4,11 @@ services:
     container_name: mongo_local
     command: ["--auth", "--wiredTigerCacheSizeGB", "0.75", "--quiet"]
     environment:
-      MONGO_INITDB_ROOT_USERNAME: root
-      MONGO_INITDB_ROOT_PASSWORD: rootpass
-      MONGO_APP_USERNAME: inz_user
-      MONGO_APP_PASSWORD: devpass
-      MONGO_DB_NAME: inz
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_INITDB_ROOT_USERNAME:-root}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_INITDB_ROOT_PASSWORD:-rootpass}
+      MONGO_APP_USERNAME: ${MONGO_APP_USERNAME:-inz_user}
+      MONGO_APP_PASSWORD: ${MONGO_APP_PASSWORD:-devpass}
+      MONGO_DB_NAME: ${MONGO_DB_NAME:-inz}
     ports:
       - "27017:27017"
     volumes:
