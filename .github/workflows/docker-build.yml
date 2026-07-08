@@ -9,6 +9,7 @@ on:
 jobs:
   docker-build:
     runs-on: ubuntu-latest
+    timeout-minutes: 45
 
     steps:
       - name: Checkout repository
@@ -25,3 +26,73 @@ jobs:
 
       - name: Build production Docker images
         run: docker compose -f docker-compose.prod.yml --env-file .env build
+
+      - name: Start production stack
+        run: docker compose -f docker-compose.prod.yml --env-file .env up -d
+
+      - name: Wait for frontend
+        run: |
+          for i in {1..60}; do
+            if curl -fsS http://localhost:8080/ > /dev/null; then
+              exit 0
+            fi
+            docker compose -f docker-compose.prod.yml --env-file .env ps
+            sleep 5
+          done
+          echo "Frontend did not become ready in time"
+          docker compose -f docker-compose.prod.yml --env-file .env logs --tail=200
+          exit 1
+
+      - name: Create tiny OBO fixture
+        run: |
+          cat > tiny.obo <<'EOF'
+          format-version: 1.2
+          ontology: go
+
+          [Term]
+          id: GO:0000001
+          name: root term
+          namespace: biological_process
+          def: "Root term." []
+
+          [Term]
+          id: GO:0000002
+          name: child term
+          namespace: biological_process
+          def: "Child term." []
+          is_a: GO:0000001 ! root term
+          EOF
+
+      - name: Smoke test OBO upload with radial layout
+        run: |
+          curl -fsS \
+            -X POST \
+            -F "file=@tiny.obo" \
+            -F "layout_type=radial" \
+            http://localhost:8080/api/flask_make_graph_structure \
+            -o response.json
+
+          python3 - <<'PY'
+          import json
+
+          with open("response.json", "r", encoding="utf-8") as f:
+              data = json.load(f)
+
+          assert "uuid" in data and data["uuid"], data
+          assert "canvas_positions" in data and len(data["canvas_positions"]) > 0, data
+          assert "links" in data, data
+          assert "names" in data and len(data["names"]) >= 2, data
+          assert "space_size" in data, data
+
+          print("OBO smoke test passed")
+          PY
+
+      - name: Show logs on failure
+        if: failure()
+        run: |
+          docker compose -f docker-compose.prod.yml --env-file .env ps
+          docker compose -f docker-compose.prod.yml --env-file .env logs --tail=200
+
+      - name: Stop production stack
+        if: always()
+        run: docker compose -f docker-compose.prod.yml --env-file .env down -v
