@@ -4,8 +4,11 @@ services:
     container_name: mongo_local
     command: ["--auth", "--wiredTigerCacheSizeGB", "0.75", "--quiet"]
     environment:
-      MONGO_INITDB_ROOT_USERNAME: root
-      MONGO_INITDB_ROOT_PASSWORD: rootpass
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_INITDB_ROOT_USERNAME:-root}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_INITDB_ROOT_PASSWORD:-rootpass}
+      MONGO_APP_USERNAME: ${MONGO_APP_USERNAME:-inz_user}
+      MONGO_APP_PASSWORD: ${MONGO_APP_PASSWORD:-devpass}
+      MONGO_DB_NAME: ${MONGO_DB_NAME:-inz}
     ports:
       - "27017:27017"
     volumes:
@@ -24,7 +27,14 @@ services:
     build: ./app/python-backend
     environment:
       MONGODB_URI: "mongodb://inz_user:devpass@mongo:27017/inz?authSource=inz"
-      PORT: "30301"
+      MONGO_DB_NAME: "inz"
+      SERVICE_IP_ADDRESS: "0.0.0.0"
+      SERVICE_PORT: "30301"
+      LAYOUT_SERVICE_IP_ADDRESS: "cpp-backend"
+      LAYOUT_SERVICE_PORT: "30311"
+      MAX_CONTENT_LENGTH_MB: "100"
+      GUNICORN_WORKERS: "1"
+      GUNICORN_TIMEOUT: "1200"
     ports:
       - "30301-30305:30301-30305"
     volumes:
@@ -33,7 +43,7 @@ services:
     tty: true
     networks:
       - dag-app-db-network
-      - dag-app-py-front-network 
+      - dag-app-py-front-network
       - dag-app-py-cpp-network
     depends_on:
       mongo:
@@ -51,20 +61,20 @@ services:
     networks:
       - dag-app-py-front-network
     depends_on:
-      - python-backend 
+      - python-backend
 
-  cpp-backend: 
-    build: ./app/cpp-backend 
+  cpp-backend:
+    build: ./app/cpp-backend
     ports:
       - "30311-30315:30311-30315"
-    volumes:      
+    volumes:
       - ./app/cpp-backend:/app
-    stdin_open: true 
-    tty: true 
-    networks:   
-      - dag-app-py-cpp-network    
+    stdin_open: true
+    tty: true
+    networks:
+      - dag-app-py-cpp-network
 
 networks:
   dag-app-db-network:
-  dag-app-py-front-network: 
-  dag-app-py-cpp-network:                 
+  dag-app-py-front-network:
+  dag-app-py-cpp-network:

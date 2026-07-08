@@ -80,12 +80,26 @@ A **Python backend** coordinates data flow, graph analysis, and communication be
 
 ---
 
-### ▶️ Run the application
+### ▶️ Run the application locally
 
 ```bash
 git clone https://github.com/jgrzes/Efficient-Visualization-of-Large-Directed-Acyclic-Graphs
 cd Efficient-Visualization-of-Large-Directed-Acyclic-Graphs
 docker compose build && docker compose up
+```
+
+### 🚀 Deployment
+
+For server or VPN-based deployment, use the production Docker Compose file:
+
+```bash
+cp .env.example .env
+```
+
+Edit .env and set the required environment variables, then start the production deployment:
+
+```bash
+docker compose -f docker-compose.prod.yml --env-file .env up -d --build
 ```
 
 ### 🌍 After startup
@@ -99,5 +113,3 @@ docker compose build && docker compose up
 - **[Jakub Grześ](https://github.com/jgrzes)**
 - **[Jan Masternak](https://github.com/janmast1o)**
 - **[Tomasz Smyda](https://github.com/tsmyda)**
-
-
