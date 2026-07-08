@@ -16,6 +16,7 @@ MONGODB_URI = os.getenv("MONGODB_URI", "")
 MONGO_DB_NAME = os.getenv("MONGO_DB_NAME", "inz")
 LAYOUT_SERVICE_IP_ADDRESS = os.getenv("LAYOUT_SERVICE_IP_ADDRESS", "cpp-backend")
 LAYOUT_SERVICE_PORT = int(os.getenv("LAYOUT_SERVICE_PORT", "30311"))
+MAX_CONTENT_LENGTH_MB = int(os.getenv("MAX_CONTENT_LENGTH_MB", "100"))
 
 
 def create_app() -> Flask:
@@ -32,6 +33,7 @@ def create_app() -> Flask:
     )
     app.config["LAYOUT_SERVICE_IP_ADDRESS"] = LAYOUT_SERVICE_IP_ADDRESS
     app.config["LAYOUT_SERVICE_PORT"] = LAYOUT_SERVICE_PORT
+    app.config["MAX_CONTENT_LENGTH"] = MAX_CONTENT_LENGTH_MB * 1024 * 1024
 
     app.register_blueprint(graph_bp)
     app.register_blueprint(search_bp)
