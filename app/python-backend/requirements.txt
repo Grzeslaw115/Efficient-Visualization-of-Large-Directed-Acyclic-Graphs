@@ -16,3 +16,4 @@ argparse
 pymongo
 orjson
 dotenv
+gunicorn
