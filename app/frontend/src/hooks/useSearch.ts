@@ -3,6 +3,14 @@ import type { NodeInfoProps } from "../components/leftsidebar/NodeInfo";
 import type { SearchFilter, SearchOptions } from "../graph/api/search";
 import { searchNodes } from "../graph/api/search";
 
+function createFilterId() {
+  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+    return crypto.randomUUID();
+  }
+
+  return `filter-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
+}
+
 export function useSearch(currentGraphUUID: string | null) {
   const [filters, setFilters] = React.useState<SearchFilter[]>([]);
   const [searchOptions, setSearchOptions] = React.useState<SearchOptions>({
@@ -48,7 +56,7 @@ export function useSearch(currentGraphUUID: string | null) {
         const alreadyExists = prev.some((f) => f.field === field && f.query === q);
         if (alreadyExists) return prev;
 
-        const newFilter: SearchFilter = { id: crypto.randomUUID(), field, query: q };
+        const newFilter: SearchFilter = { id: createFilterId(), field, query: q };
         const updated = [...prev, newFilter];
         void performSearch(updated);
         return updated;
